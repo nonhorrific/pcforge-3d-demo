@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0c1118">
+  <title>PCForge | 3D PC Builder</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0c1118;
+      --surface: #121a24;
+      --surface-raised: #172230;
+      --line: #263546;
+      --text: #edf3fa;
+      --muted: #95a5b8;
+      --accent: #72e6c2;
+      --blue: #84b6ff;
+      --warn: #ffc979;
+      --bad: #ff8793;
+      --good: #82e7a2;
+      --radius: 18px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(ellipse at 12% -18%, #14382f 0, transparent 34%), var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .shell { width: min(1440px, calc(100% - 40px)); margin: 0 auto; }
+    header { padding: 34px 0 22px; border-bottom: 1px solid var(--line); }
+    .topline { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+    .brand { display: flex; gap: 12px; align-items: center; }
+    .brand-mark { width: 39px; height: 39px; border-radius: 12px; display: grid; place-items: center; color: #061711; background: var(--accent); font-weight: 950; letter-spacing: -2px; }
+    .brand-name { font-size: 17px; font-weight: 800; letter-spacing: .08em; }
+    .brand-name span { color: var(--accent); }
+    .catalog-status { color: var(--muted); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+    .hero { padding: 38px 0 25px; display: flex; justify-content: space-between; gap: 28px; align-items: end; }
+    .eyebrow { color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+    h1 { font-size: clamp(32px, 5vw, 52px); line-height: 1.03; letter-spacing: -.045em; margin: 10px 0 12px; }
+    .hero p { max-width: 650px; color: var(--muted); margin: 0; line-height: 1.6; }
+    .hero-count { min-width: 150px; padding: 15px 18px; background: #11231f; border: 1px solid #275849; border-radius: 15px; }
+    .hero-count strong { display: block; font-size: 26px; }
+    .hero-count span { color: #a6c9be; font-size: 12px; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 22px; align-items: start; padding: 22px 0 52px; }
+    .assembly-panel { grid-column: 1 / -1; min-width: 0; overflow: hidden; border: 1px solid #304355; border-radius: 20px; background: linear-gradient(145deg, #131d28, #0d141d 75%); }
+    .assembly-head { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 17px 19px 12px; }
+    .assembly-title { margin: 0; font-size: 16px; }
+    .assembly-subtitle { color: var(--muted); font-size: 11px; margin: 5px 0 0; }
+    .assembly-controls { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+    .assembly-tool, .view-toggle { color: #c8d5df; background: #172330; border: 1px solid #34485b; border-radius: 9px; padding: 8px 11px; font-size: 10px; }
+    .view-toggle.active { color: #071a14; border-color: var(--accent); background: var(--accent); font-weight: 850; }
+    .assembly-stage { height: 430px; position: relative; background: radial-gradient(ellipse at 50% 38%, #20333d 0, #111b25 55%, #0b1118 100%); border-top: 1px solid #263746; border-bottom: 1px solid #263746; }
+    #assembly-canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; outline: none; }
+    #assembly-canvas:focus-visible { box-shadow: inset 0 0 0 2px var(--accent); }
+    #assembly-canvas.dragging { cursor: grabbing; }
+    .assembly-caption { position: absolute; right: 15px; bottom: 12px; padding: 7px 9px; border: 1px solid #34485b; border-radius: 8px; color: #9cafbf; background: #0b1219cc; font-size: 9px; pointer-events: none; }
+    .assembly-bottom { padding: 12px 16px 15px; }
+    .assembly-summary { color: #91a4b7; font-size: 10px; line-height: 1.5; margin-bottom: 10px; }
+    .assembly-legend { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 3px; scrollbar-width: thin; }
+    .model-chip { display: flex; align-items: center; gap: 7px; flex: none; color: #c4d2df; background: #111a23; border: 1px solid #314252; border-radius: 9px; padding: 7px 9px; font-size: 10px; }
+    .model-chip span { color: #8297aa; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .model-chip.active { color: #071a14; border-color: var(--accent); background: var(--accent); font-weight: 800; }
+    .model-chip.active span { color: #245145; }
+    .assembly-empty-label { color: #8799ab; font-size: 10px; padding: 6px 2px; }
+    .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 15px; }
+    .search { flex: 1; position: relative; }
+    .search::before { content: "⌕"; position: absolute; left: 14px; top: 7px; font-size: 24px; color: var(--muted); }
+    .search input, .sort-select { color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; height: 44px; outline: none; }
+    .search input { width: 100%; padding: 0 14px 0 43px; }
+    .search input:focus, .sort-select:focus { border-color: #53bca0; box-shadow: 0 0 0 3px #53bca01a; }
+    .sort-select { padding: 0 12px; }
+    .categories { display: flex; gap: 8px; overflow: auto; padding-bottom: 5px; margin-bottom: 18px; scrollbar-width: thin; }
+    .chip { flex: none; border: 1px solid var(--line); color: #c3d0de; background: var(--surface); border-radius: 999px; padding: 9px 13px; font-size: 12px; }
+    .chip.active { color: #051a13; background: var(--accent); border-color: var(--accent); font-weight: 800; }
+    .section-label { color: #7d91a7; font-size: 10px; text-transform: uppercase; letter-spacing: .14em; margin: 20px 2px 10px; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .card { background: linear-gradient(150deg, #172331, #111923 72%); border: 1px solid var(--line); border-radius: var(--radius); padding: 17px; min-height: 238px; display: flex; flex-direction: column; transition: border-color .16s, transform .16s; }
+    .card:hover { border-color: #466276; transform: translateY(-2px); }
+    .card-top { display: flex; justify-content: space-between; gap: 12px; align-items: start; }
+    .category-label { color: var(--blue); background: #24405a50; border: 1px solid #33516c; border-radius: 999px; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; padding: 5px 8px; white-space: nowrap; }
+    .brand-label { color: var(--muted); font-size: 11px; text-align: right; }
+    .card h2 { font-size: 17px; line-height: 1.28; letter-spacing: -.02em; margin: 13px 0 6px; }
+    .summary { color: var(--muted); font-size: 12px; line-height: 1.5; margin: 0 0 13px; }
+    .specs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
+    .spec { background: #0c131c; color: #cbd7e2; border: 1px solid #253444; padding: 5px 8px; font-size: 10px; border-radius: 7px; }
+    .card-bottom { display: flex; justify-content: space-between; align-items: center; gap: 8px; border-top: 1px solid #263546; margin-top: 15px; padding-top: 12px; }
+    .source-link { color: #9bb8d4; font-size: 11px; text-decoration: none; }
+    .source-link:hover { color: #d8e9f8; text-decoration: underline; }
+    .add-btn { color: #082019; background: var(--accent); border: 0; border-radius: 9px; font-size: 11px; font-weight: 850; padding: 9px 11px; }
+    .add-btn.selected { color: #bfd2e3; background: #243748; border: 1px solid #40556b; }
+    .empty { color: var(--muted); border: 1px dashed #3a4b5d; border-radius: 14px; padding: 30px; text-align: center; grid-column: 1 / -1; }
+    aside { position: sticky; top: 18px; }
+    .build-panel { background: #111a24; border: 1px solid #304355; border-radius: 20px; overflow: hidden; }
+    .build-head { padding: 18px 18px 14px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
+    .build-head h2 { font-size: 15px; margin: 0; }
+    .build-count { background: #22352f; color: var(--accent); border-radius: 999px; padding: 5px 8px; font-size: 10px; font-weight: 800; }
+    .build-list { padding: 6px 17px; max-height: 350px; overflow: auto; }
+    .build-empty { color: var(--muted); font-size: 12px; line-height: 1.55; padding: 10px 0 14px; }
+    .build-item { display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid #263442; }
+    .build-item:last-child { border-bottom: 0; }
+    .build-item strong { display: block; font-size: 11px; line-height: 1.35; }
+    .build-item span { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
+    .remove-btn { align-self: start; color: #a8bacb; border: 0; background: transparent; padding: 1px 3px; font-size: 15px; }
+    .checks { border-top: 1px solid var(--line); padding: 14px 17px 16px; }
+    .checks-title { color: #dce7f0; font-size: 11px; font-weight: 800; margin-bottom: 9px; }
+    .build-status { padding: 12px; margin: 0 0 14px; border: 1px solid #34485b; border-radius: 12px; background: #172331; }
+    .build-status strong { display: block; font-size: 12px; }
+    .build-status p { margin: 5px 0 0; color: #b1c0cf; font-size: 10px; line-height: 1.5; }
+    .build-status.good { border-color: #2f6648; background: #12271d; }
+    .build-status.review, .build-status.missing { border-color: #725630; background: #2a2115; }
+    .build-status.bad { border-color: #71414a; background: #2c191e; }
+    .build-status.empty { border-color: #34485b; }
+    .build-status.good strong { color: var(--good); }
+    .build-status.review strong, .build-status.missing strong { color: var(--warn); }
+    .build-status.bad strong { color: var(--bad); }
+    .check { display: grid; grid-template-columns: 15px 1fr; gap: 8px; color: #b1c0cf; font-size: 10px; line-height: 1.45; padding: 8px 0; border-top: 1px solid #263442; }
+    .check .icon { grid-row: span 2; font-weight: 900; }
+    .check strong { display: block; color: #dce7f0; font-size: 10px; margin-bottom: 2px; }
+    .check.good .icon { color: var(--good); }
+    .check.review .icon, .check.missing .icon { color: var(--warn); }
+    .check.bad .icon { color: var(--bad); }
+    .check.info .icon { color: var(--blue); }
+    .check-empty { color: var(--muted); font-size: 10px; line-height: 1.5; padding: 8px 0; }
+    .reset { margin: 0 17px 17px; width: calc(100% - 34px); padding: 10px; border: 1px solid #34485b; border-radius: 10px; color: #c5d3e0; background: #172331; font-size: 11px; }
+    .notice { color: #91a4b7; font-size: 10px; line-height: 1.5; margin-top: 11px; }
+    footer { padding: 17px 0 24px; border-top: 1px solid var(--line); color: #8394a7; font-size: 10px; line-height: 1.6; }
+    footer a { color: #aec9e3; }
+    @media (max-width: 930px) { .layout { grid-template-columns: 1fr; } aside { position: static; } .build-list { max-height: 250px; } }
+    @media (max-width: 620px) { .shell { width: min(100% - 24px, 560px); } .hero { align-items: start; flex-direction: column; padding-top: 28px; } .hero-count { width: 100%; } .toolbar { align-items: stretch; flex-direction: column; } .sort-select { width: 100%; } .grid { grid-template-columns: 1fr; } .catalog-status { display: none; } .assembly-head { align-items: start; flex-direction: column; gap: 12px; padding: 15px; } .assembly-stage { height: 340px; } .assembly-controls { width: 100%; } .assembly-tool, .view-toggle { flex: 1; } .assembly-caption { font-size: 8px; right: 8px; bottom: 8px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="shell">
+      <div class="topline">
+        <div class="brand"><div class="brand-mark">PC</div><div class="brand-name">PC<span>FORGE</span></div></div>
+        <div class="catalog-status">Curated catalog · manufacturer specs · updated Oct 8, 2026</div>
+      </div>
+      <div class="hero">
+        <div>
+          <div class="eyebrow">Build with confidence</div>
+          <h1>Build it. See it.<br>Make it yours.</h1>
+          <p>Choose consumer PC parts and desk gear, then explore a live 3D assembly. Orbit, zoom, or separate the components to inspect how your prospective setup comes together.</p>
+        </div>
+        <div class="hero-count"><strong id="part-count">—</strong><span>manufacturer-linked products</span></div>
+      </div>
+    </div>
+  </header>
+  <main class="shell layout">
+    <section class="assembly-panel" aria-label="Interactive 3D PC assembly">
+      <div class="assembly-head">
+        <div><h2 class="assembly-title">Your 3D assembly</h2><p class="assembly-subtitle">A detailed, interactive model of the parts in your build</p></div>
+        <div class="assembly-controls" role="group" aria-label="3D assembly controls">
+          <button class="view-toggle active" type="button" data-assembly-mode="assembled" aria-pressed="true">Assembled</button>
+          <button class="view-toggle" type="button" data-assembly-mode="exploded" aria-pressed="false">Exploded view</button>
+          <button class="assembly-tool" type="button" id="assembly-home">Show all</button>
+          <button class="assembly-tool" type="button" id="assembly-reset">Reset view</button>
+        </div>
+      </div>
+      <div class="assembly-stage">
+        <canvas id="assembly-canvas" tabindex="0" aria-label="Interactive 3D model. Drag to orbit, use the scroll wheel to zoom, or use the arrow and plus or minus keys."></canvas>
+        <div class="assembly-caption">Drag to orbit · Scroll to zoom · Select a part below to focus</div>
+      </div>
+      <div class="assembly-bottom">
+        <div class="assembly-summary" id="assembly-summary" role="status" aria-live="polite">Add components to see the 3D assembly.</div>
+        <div class="assembly-legend" id="assembly-legend" aria-label="Selected model parts"><span class="assembly-empty-label">No components selected</span></div>
+      </div>
+    </section>
+    <section aria-label="Parts catalog">
+      <div class="toolbar">
+        <label class="search"><input id="search" type="search" placeholder="Search parts, brands, or specs" autocomplete="off" aria-label="Search parts"></label>
+        <select class="sort-select" id="sort" aria-label="Sort catalog">
+          <option value="recommended">Recommended order</option>
+          <option value="name">Name A to Z</option>
+          <option value="brand">Brand A to Z</option>
+        </select>
+      </div>
+      <nav class="categories" id="categories" aria-label="Filter by category"></nav>
+      <div id="catalog"></div>
+    </section>
+    <aside>
+      <section class="build-panel" aria-label="Your build">
+        <div class="build-head"><h2>Your build</h2><span class="build-count" id="build-count">0 parts</span></div>
+        <div class="build-list" id="build-list"></div>
+        <div class="checks" id="checks" aria-live="polite" aria-atomic="false"></div>
+        <button class="reset" id="reset">Clear build</button>
+      </section>
+      <p class="notice">Compatibility is based on the specs listed here. Confirm BIOS support, memory QVL, exact graphics-card dimensions, radiator placement, power connectors, and retailer SKU details before purchase.</p>
+    </aside>
+  </main>
+  <footer><div class="shell">PCForge catalog seed · Product names and specifications belong to their manufacturers. Each product card links to its manufacturer source. Retail offers can be connected as a separate live data feed.</div></footer>
+  <script src="./assembly.js"></script>
+  <script>
+    const singleSelect = new Set(["cpu", "gpu", "motherboard", "memory", "cooler", "case", "psu", "monitor", "keyboard", "mouse", "headset", "webcam"]);
+    const state = { data: null, category: "all", query: "", sort: "recommended", selected: [] };
+    const $ = (selector) => document.querySelector(selector);
+    const categoryName = (id) => state.data.categories.find((c) => c.id === id)?.label || id;
+
+    function formatSpecs(part) {
+      const s = part.specs;
+      const values = {
+        cpu: [s.cores && `${s.cores} cores`, s.threads && `${s.threads} threads`, s.boostGHz && `${s.boostGHz} GHz boost`, s.socket, s.tdpW && `${s.tdpW}W`],
+        gpu: [s.memoryGB && `${s.memoryGB}GB ${s.memoryType}`, s.boardPowerW && `${s.boardPowerW}W`, s.recommendedPsuW && `${s.recommendedPsuW}W PSU suggested`],
+        motherboard: [s.chipset, s.socket, s.formFactor, s.memoryType, s.m2Slots && `${s.m2Slots} M.2`],
+        memory: [s.capacityGB && `${s.capacityGB}GB`, s.speedMTs && `${s.speedMTs} MT/s`, s.latencyCL && `CL${s.latencyCL}`, s.modules && `${s.modules}-stick kit`],
+        storage: [s.capacityTB && `${s.capacityTB}TB`, s.formFactor, s.interface, s.sequentialReadMBs && `${s.sequentialReadMBs} MB/s read`],
+        cooler: [s.coolingType, s.heightMm && `${s.heightMm}mm tall`, s.radiatorSizeMm && `${s.radiatorSizeMm}mm radiator`, s.fanCount && `${s.fanCount} fans`],
+        case: [s.formFactor, s.gpuClearanceMm && `${s.gpuClearanceMm}mm GPU clearance`, s.cpuCoolerClearanceMm && `${s.cpuCoolerClearanceMm}mm cooler clearance`],
+        psu: [s.wattageW && `${s.wattageW}W`, s.standard, s.efficiency, s.modular],
+        monitor: [s.diagonalInches && `${s.diagonalInches} inch`, s.resolution, s.panel, s.refreshRateHz && `${s.refreshRateHz}Hz`],
+        keyboard: [s.switchType, s.layout, s.connectivity?.join(" · ")],
+        mouse: [s.weightG && `${s.weightG}g`, s.sensor, s.maxDpi && `${s.maxDpi.toLocaleString()} DPI`, s.maxPollingRateHz && `${s.maxPollingRateHz / 1000}kHz`],
+        headset: [s.driverMm && `${s.driverMm}mm drivers`, s.connectivity?.join(" · "), s.batteryLifeHours && `${s.batteryLifeHours}h battery`],
+        webcam: [s.maxResolution, s.connection, s.privacyShutter && "Privacy shutter"]
+      };
+      return (values[part.category] || []).filter(Boolean).slice(0, 4);
+    }
+
+    function renderCategories() {
+      const nav = $("#categories");
+      const all = [{ id: "all", label: "All parts" }, ...state.data.categories];
+      nav.innerHTML = all.map((c) => `<button class="chip ${state.category === c.id ? "active" : ""}" data-category="${c.id}">${c.label}</button>`).join("");
+      nav.querySelectorAll("button").forEach((button) => button.addEventListener("click", () => {
+        state.category = button.dataset.category;
+        renderCategories();
+        renderCatalog();
+      }));
+    }
+
+    function renderCatalog() {
+      const q = state.query.trim().toLowerCase();
+      let parts = state.data.parts.filter((part) => {
+        const matchesCategory = state.category === "all" || part.category === state.category;
+        const haystack = `${part.name} ${part.brand} ${part.category} ${part.summary} ${JSON.stringify(part.specs)}`.toLowerCase();
+        return matchesCategory && (!q || haystack.includes(q));
+      });
+      if (state.sort === "name") parts.sort((a, b) => a.name.localeCompare(b.name));
+      if (state.sort === "brand") parts.sort((a, b) => a.brand.localeCompare(b.brand) || a.name.localeCompare(b.name));
+      const host = $("#catalog");
+      if (!parts.length) { host.innerHTML = `<div class="grid"><div class="empty">No parts match that search. Try another name or category.</div></div>`; return; }
+      const groups = new Map();
+      for (const part of parts) {
+        const group = state.category === "all" ? (state.data.categories.find((c) => c.id === part.category)?.group || "Parts") : "Matches";
+        if (!groups.has(group)) groups.set(group, []);
+        groups.get(group).push(part);
+      }
+      host.innerHTML = [...groups.entries()].map(([group, items]) => `<div class="section-label">${group}</div><div class="grid">${items.map((part) => {
+        const selected = state.selected.some((item) => item.id === part.id);
+        return `<article class="card">
+          <div class="card-top"><span class="category-label">${categoryName(part.category)}</span><span class="brand-label">${part.brand}</span></div>
+          <h2>${part.name}</h2><p class="summary">${part.summary}</p>
+          <div class="specs">${formatSpecs(part).map((item) => `<span class="spec">${item}</span>`).join("")}</div>
+          <div class="card-bottom"><a class="source-link" href="${part.sourceUrl}" target="_blank" rel="noopener noreferrer">Manufacturer specs ↗</a><button class="add-btn ${selected ? "selected" : ""}" data-add="${part.id}">${selected ? "Added ✓" : "Add to build +"}</button></div>
+        </article>`;
+      }).join("")}</div>`).join("");
+      host.querySelectorAll("[data-add]").forEach((button) => button.addEventListener("click", () => togglePart(button.dataset.add)));
+    }
+
+    function togglePart(id) {
+      const existing = state.selected.find((item) => item.id === id);
+      if (existing) state.selected = state.selected.filter((item) => item.id !== id);
+      else {
+        const part = state.data.parts.find((item) => item.id === id);
+        if (singleSelect.has(part.category)) state.selected = state.selected.filter((item) => item.category !== part.category);
+        state.selected.push(part);
+      }
+      renderCatalog();
+      renderBuild();
+    }
+
+    function selected(category) { return state.selected.find((item) => item.category === category); }
+    function checks() {
+      const result = [];
+      const cpu = selected("cpu"), board = selected("motherboard"), ram = selected("memory"), cooler = selected("cooler"), pcCase = selected("case"), gpu = selected("gpu"), psu = selected("psu");
+      const add = (kind, title, text) => result.push({ kind, title, text });
+      if (!state.selected.length) return result;
+
+      const required = [
+        ["cpu", "Processor"], ["motherboard", "Motherboard"], ["memory", "Memory"],
+        ["storage", "Storage"], ["case", "Case"], ["psu", "Power supply"]
+      ];
+      for (const [category, label] of required) {
+        if (!selected(category)) add("missing", `Add ${label.toLowerCase()}`, `${label} is needed for a complete desktop build.`);
+      }
+      if (cpu && cpu.specs.coolerIncluded !== true && !cooler) add("missing", "Add CPU cooling", `${cpu.name} does not include a CPU cooler.`);
+      if (cpu && cpu.specs.integratedGraphics !== true && !gpu) add("missing", "Add a graphics card", `${cpu.name} does not list integrated graphics, so a graphics card is needed for display output.`);
+
+      if (cpu && board) {
+        add(cpu.compatibility.socket === board.compatibility.socket ? "good" : "bad", "Processor socket",
+          cpu.compatibility.socket === board.compatibility.socket
+            ? `Both parts use ${cpu.compatibility.socket}.`
+            : `${cpu.name} uses ${cpu.compatibility.socket}; ${board.name} uses ${board.compatibility.socket}.`);
+        const families = board.compatibility.supportedCpuFamilies || [];
+        if (cpu.compatibility.series && families.length) {
+          const familyFits = families.includes(cpu.compatibility.series);
+          add(familyFits ? "good" : "bad", "Processor family support",
+            familyFits ? `${board.name} lists support for ${cpu.compatibility.series}.` : `${board.name} does not list support for ${cpu.compatibility.series}.`);
+        } else add("review", "Processor support list", "Check the motherboard maker's CPU support list and minimum BIOS version for this exact processor.");
+        const chipsets = cpu.compatibility.chipsets || [];
+        if (board.specs.chipset && chipsets.length) {
+          const chipsetFits = chipsets.includes(board.specs.chipset);
+          add(chipsetFits ? "good" : "bad", "Chipset support",
+            chipsetFits ? `${board.specs.chipset} is listed for this processor.` : `${board.specs.chipset} is not listed in this processor's supported chipset data.`);
+        }
+      }
+
+      if (cpu && ram) {
+        const cpuMemoryFits = cpu.compatibility.memoryType === ram.compatibility.memoryType;
+        add(cpuMemoryFits ? "good" : "bad", "Processor memory type",
+          cpuMemoryFits ? `${cpu.name} supports ${ram.compatibility.memoryType} memory.` : `${cpu.name} and this kit list different memory types.`);
+      }
+      if (board && ram) {
+        const memoryFits = board.compatibility.memoryType === ram.compatibility.memoryType;
+        add(memoryFits ? "good" : "bad", "Motherboard memory type",
+          memoryFits ? `${ram.name} matches the board's ${board.compatibility.memoryType} memory.` : `${ram.name} is ${ram.compatibility.memoryType}; the board requires ${board.compatibility.memoryType}.`);
+        if (ram.specs.modules && board.specs.memorySlots) {
+          const moduleFits = ram.specs.modules <= board.specs.memorySlots;
+          add(moduleFits ? "good" : "bad", "Memory slots",
+            moduleFits ? `${ram.specs.modules}-module kit fits within the board's ${board.specs.memorySlots} slots.` : `The ${ram.specs.modules}-module kit exceeds the board's ${board.specs.memorySlots} memory slots.`);
+        }
+        if (ram.specs.capacityGB && board.specs.maxMemoryGB) {
+          const capacityFits = ram.specs.capacityGB <= board.specs.maxMemoryGB;
+          add(capacityFits ? "good" : "bad", "Memory capacity",
+            capacityFits ? `${ram.specs.capacityGB}GB is within the board's ${board.specs.maxMemoryGB}GB maximum.` : `${ram.specs.capacityGB}GB exceeds the board's ${board.specs.maxMemoryGB}GB maximum.`);
+        }
+        if (ram.specs.speedMTs) add("info", "Memory speed", `${ram.specs.speedMTs} MT/s is the kit's rated profile speed. Reaching it may require EXPO or XMP and depends on the CPU, board, and DIMM count.`);
+      }
+
+      const storageParts = state.selected.filter((part) => part.category === "storage");
+      if (board && storageParts.length) {
+        const m2Parts = storageParts.filter((part) => String(part.specs.formFactor || "").startsWith("M.2"));
+        if (m2Parts.length && board.specs.m2Slots) {
+          const slotsFit = m2Parts.length <= board.specs.m2Slots;
+          add(slotsFit ? "good" : "bad", "M.2 slot count",
+            `${m2Parts.length} selected M.2 drive${m2Parts.length === 1 ? "" : "s"}; the board lists ${board.specs.m2Slots} M.2 slots.`);
+        }
+        for (const drive of storageParts) {
+          if (drive.specs.formFactor && board.specs.m2FormFactors) {
+            const formFits = board.specs.m2FormFactors.includes(drive.specs.formFactor);
+            add(formFits ? "good" : "bad", `${drive.name} form factor`,
+              formFits ? `${drive.specs.formFactor} is supported by the board's listed M.2 sizes.` : `${drive.specs.formFactor} is not listed in the board's supported M.2 sizes.`);
+          }
+          if (drive.compatibility.interface && board.compatibility.m2Interfaces) {
+            const interfaceFits = board.compatibility.m2Interfaces.includes(drive.compatibility.interface);
+            add(interfaceFits ? "good" : "bad", `${drive.name} interface`,
+              interfaceFits ? `The board lists ${drive.compatibility.interface} support.` : `The board does not list ${drive.compatibility.interface} support.`);
+          }
+        }
+        add("info", "Storage lane sharing", "Check the motherboard manual for M.2 lane sharing and any disabled SATA or PCIe slots.");
+      }
+
+      if (cpu && cooler) {
+        const sockets = cooler.compatibility.sockets || [];
+        const socketFits = sockets.includes(cpu.compatibility.socket);
+        add(socketFits ? "good" : "bad", "Cooler mounting",
+          socketFits ? `${cooler.name} lists mounting support for ${cpu.compatibility.socket}.` : `${cooler.name} does not list mounting support for ${cpu.compatibility.socket}.`);
+      }
+      if (cpu && !cooler && cpu.specs.coolerIncluded === true) add("good", "Included CPU cooler", `${cpu.name} includes a cooler, so a separate cooler is optional.`);
+      if (cooler && cooler.specs.coolingType === "Liquid" && cpu) add("info", "Cooler capacity", "Cooling performance and noise depend on CPU power limits, case airflow, and fan setup.");
+      if (pcCase && cooler && cooler.specs.heightMm) {
+        const limit = pcCase.compatibility.maxCpuCoolerHeightMm;
+        if (limit) {
+          const fits = cooler.specs.heightMm <= limit;
+          add(fits ? "good" : "bad", "Air cooler clearance",
+            fits ? `${cooler.specs.heightMm}mm cooler fits within the case's ${limit}mm limit.` : `${cooler.specs.heightMm}mm cooler exceeds the case's ${limit}mm limit.`);
+        }
+      }
+      if (cooler && cooler.specs.coolingType === "Air" && ram) {
+        const ramHeight = ram.specs.heightMm, ramLimit = cooler.specs.ramClearanceMm;
+        if (ramHeight && ramLimit) add(ramHeight <= ramLimit ? "good" : "review", "Cooler and memory clearance",
+          ramHeight <= ramLimit ? `${ramHeight}mm memory is within the cooler's ${ramLimit}mm clearance.` : `${ramHeight}mm memory exceeds the cooler's ${ramLimit}mm clearance; check fan position and total cooler height.`);
+        else add("review", "Cooler and memory clearance", "The catalog does not list the memory height. Confirm RAM clearance and front-fan position in the cooler specifications.");
+      }
+      if (board && pcCase) {
+        const formFactors = pcCase.compatibility.motherboardFormFactors || [];
+        const fits = formFactors.includes(board.compatibility.formFactor);
+        add(fits ? "good" : "bad", "Motherboard and case size",
+          fits ? `${pcCase.name} supports ${board.compatibility.formFactor}.` : `${pcCase.name} does not list support for ${board.compatibility.formFactor} boards.`);
+      }
+      if (cooler && pcCase && cooler.specs.radiatorSizeMm) {
+        const sizes = pcCase.compatibility.radiatorSizesMm || [];
+        const fits = sizes.includes(cooler.specs.radiatorSizeMm);
+        add(fits ? "good" : "bad", "Radiator support",
+          fits ? `The case lists support for a ${cooler.specs.radiatorSizeMm}mm radiator.` : `The case does not list support for a ${cooler.specs.radiatorSizeMm}mm radiator.`);
+        if (fits) add("review", "Radiator placement", "Confirm the radiator's full length and thickness, fan clearance, and mounting position in the case manual.");
+      }
+      if (gpu && pcCase) {
+        const length = gpu.compatibility.lengthMm, limit = pcCase.compatibility.maxGpuLengthMm;
+        if (length && limit) {
+          const fits = length <= limit;
+          add(fits ? "good" : "bad", "Graphics card clearance",
+            fits ? `${length}mm card fits within the case's ${limit}mm limit.` : `${length}mm card exceeds the case's ${limit}mm limit.`);
+        } else add("review", "Graphics card clearance", `Exact ${gpu.name} card dimensions are not listed. Check the specific card length and thickness against the case and radiator layout.`);
+      }
+      if (psu && pcCase) {
+        const length = psu.specs.lengthMm, limit = pcCase.compatibility.maxPsuLengthMm;
+        if (length && limit) {
+          const fits = length <= limit;
+          add(fits ? "good" : "bad", "Power supply clearance",
+            fits ? `${length}mm power supply fits within the case's ${limit}mm limit.` : `${length}mm power supply exceeds the case's ${limit}mm limit.`);
+        }
+        const psuForm = psu.compatibility.formFactor;
+        if (psuForm && pcCase.compatibility.psuFormFactors) {
+          const fits = pcCase.compatibility.psuFormFactors.includes(psuForm);
+          add(fits ? "good" : "bad", "Power supply format",
+            fits ? `The case lists ${psuForm} power supply support.` : `The case does not list ${psuForm} power supply support.`);
+        }
+      }
+
+      if (psu) {
+        const hasDisplayDevice = Boolean(gpu || cpu?.specs.integratedGraphics === true);
+        if (gpu && gpu.compatibility.recommendedPsuW) {
+          const meetsVendor = psu.specs.wattageW >= gpu.compatibility.recommendedPsuW;
+          add(meetsVendor ? "good" : "bad", "Graphics card power recommendation",
+            meetsVendor ? `${psu.specs.wattageW}W meets the GPU maker's ${gpu.compatibility.recommendedPsuW}W recommendation.` : `${psu.specs.wattageW}W is below the GPU maker's ${gpu.compatibility.recommendedPsuW}W recommendation.`);
+          add("info", "Graphics card power connector", `Confirm the PSU has the connector required by this GPU: ${gpu.specs.powerConnector || "see the product specification"}.`);
+        }
+        if (cpu && hasDisplayDevice) {
+          const cpuPower = cpu.specs.maxTurboPowerW || cpu.specs.tdpW || 0;
+          const gpuPower = gpu ? (gpu.specs.boardPowerW || 0) : 0;
+          const estimate = Math.ceil(((cpuPower + gpuPower + 150) * 1.2) / 50) * 50;
+          const meetsEstimate = psu.specs.wattageW >= estimate;
+          add(meetsEstimate ? "good" : (gpu && psu.specs.wattageW < (gpu.compatibility.recommendedPsuW || 0) ? "info" : "review"), "Estimated system power",
+            `${estimate}W planning estimate uses listed CPU and GPU power, 150W for other components, and 20% headroom. Selected PSU: ${psu.specs.wattageW}W. This estimate is a sizing guide, not a manufacturer guarantee.`);
+        }
+      }
+      if (board && cpu && !board.compatibility.minimumBios) add("info", "BIOS version", "The catalog does not track the exact minimum BIOS version. Check the board maker's CPU support list before purchase.");
+      return result;
+    }
+
+    function compatibilitySummary(items) {
+      if (!state.selected.length) return { kind: "empty", title: "Start your build", text: "Add parts to see what fits and which details still need a check." };
+      const conflicts = items.filter((item) => item.kind === "bad").length;
+      const missing = items.filter((item) => item.kind === "missing").length;
+      const review = items.filter((item) => item.kind === "review").length;
+      const passed = items.filter((item) => item.kind === "good").length;
+      if (conflicts) return { kind: "bad", title: `${conflicts} compatibility ${conflicts === 1 ? "issue" : "issues"}`, text: "Resolve the listed conflicts before buying these parts." };
+      if (missing) return { kind: "missing", title: `Build incomplete · ${missing} ${missing === 1 ? "part" : "parts"} missing`, text: "Add the required parts to check the full build." };
+      if (review) return { kind: "review", title: "Check a few details", text: `${passed} checks passed. ${review} item${review === 1 ? "" : "s"} need a manual confirmation.` };
+      return { kind: "good", title: "Compatible based on listed specs", text: `${passed} checks passed. Review the manufacturer notes before purchase.` };
+    }
+
+    function renderBuild() {
+      window.PCForgeAssembly?.update(state.selected);
+      $("#build-count").textContent = `${state.selected.length} ${state.selected.length === 1 ? "part" : "parts"}`;
+      const list = $("#build-list");
+      list.innerHTML = state.selected.length ? state.selected.map((part) => `<div class="build-item"><div><strong>${part.name}</strong><span>${categoryName(part.category)} · ${part.brand}</span></div><button class="remove-btn" aria-label="Remove ${part.name}" data-remove="${part.id}">×</button></div>`).join("") : `<div class="build-empty">Your build is empty.<br>Add a processor, graphics card, and the rest of your setup from the catalog.</div>`;
+      list.querySelectorAll("[data-remove]").forEach((button) => button.addEventListener("click", () => togglePart(button.dataset.remove)));
+      const items = checks();
+      const summary = compatibilitySummary(items);
+      const icon = { good: "✓", bad: "!", missing: "○", review: "?", info: "i", empty: "•" };
+      const detail = items.length ? items.map((item) => `<div class="check ${item.kind}"><span class="icon" aria-hidden="true">${icon[item.kind] || "•"}</span><div><strong>${item.title}</strong><span>${item.text}</span></div></div>`).join("") : `<div class="check-empty">Compatibility checks appear as you add parts.</div>`;
+      $("#checks").innerHTML = `<div class="checks-title">Build compatibility</div><div class="build-status ${summary.kind}" role="status"><strong>${summary.title}</strong><p>${summary.text}</p></div>${detail}`;
+    }
+
+    async function start() {
+      try {
+        const response = await fetch("./parts.json");
+        if (!response.ok) throw new Error("Could not load parts.json");
+        state.data = await response.json();
+        $("#part-count").textContent = state.data.parts.length;
+        renderCategories();
+        renderCatalog();
+        renderBuild();
+      } catch (error) {
+        $("#catalog").innerHTML = `<div class="grid"><div class="empty">The catalog data could not be loaded. Open this folder through a local web server so the page can read parts.json.</div></div>`;
+        $("#checks").innerHTML = `<div class="checks-title">Catalog loading</div><div class="check warn"><span class="icon">!</span><span>Serve this folder over HTTP to load the database file.</span></div>`;
+      }
+    }
+    $("#search").addEventListener("input", (event) => { state.query = event.target.value; renderCatalog(); });
+    $("#sort").addEventListener("change", (event) => { state.sort = event.target.value; renderCatalog(); });
+    $("#reset").addEventListener("click", () => { state.selected = []; renderCatalog(); renderBuild(); });
+    window.PCForgeAssembly?.mount();
+    start();
+  </script>
+</body>
+</html>
